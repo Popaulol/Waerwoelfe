@@ -1,0 +1,110 @@
+<!DOCTYPE HTML>
+<html lang="en">
+<head>
+    <title>Flask-SocketIO Test</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.5.1/jquery.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/3.0.4/socket.io.js" integrity="sha512-aMGMvNYu8Ue4G+fHa359jcPb1u+ytAF+P2SCb+PxrjCdO3n3ZTxJ30zuH39rimUggmTwmh2u7wvQsDTHESnmfQ==" crossorigin="anonymous"></script>
+    <script type="text/javascript" charset="utf-8">
+        $(document).ready(function() {
+            // Connect to the Socket.IO server.
+            // The connection URL has the following format, relative to the current page:
+            //     http[s]://<domain>:<port>[/<namespace>]
+            let socket = io();
+
+            socket.on("invalid_amount", function () {
+                alert("Eine der Rollenzahlen, war keine Zahl")
+            })
+
+            socket.on("more_roles", function () {
+                alert("Es gibt mehr rollen zu vergeben, als Nutzer vorhanden sind!")
+            })
+
+            socket.on("users", function (msg) {
+                let tbody = document.getElementById("users")
+                tbody.innerHTML = ""
+                for (user of msg.users) {
+                    let tr = document.createElement("tr")
+                    let name = document.createElement("td")
+                    let role = document.createElement("td")
+                    name.innerHTML = user.name;
+                    role.innerHTML = user.role
+
+                    tr.style = "border: 1px solid black; border-collapse: collapse;"
+                    name.style = "border: 1px solid black; border-collapse: collapse;"
+                    role.style = "border: 1px solid black; border-collapse: collapse;"
+
+                    tr.appendChild(name)
+                    tr.appendChild(role)
+                    tbody.appendChild(tr)
+                }
+            })
+
+            $("form#role_add").submit(
+                function (event) {
+                    let row = document.createElement("div")
+                    let role_name = document.createElement("input");
+                    role_name.placeholder = "Rollen Name"
+                    role_name.type = "text"
+                    let player_amount = document.createElement("input");
+                    player_amount.placeholder = "Anzahl"
+                    player_amount.type = "number"
+                    row.appendChild(role_name)
+                    row.appendChild(player_amount)
+                    document.getElementById("roles").appendChild(row)
+
+                    return false
+                }
+            );
+            
+            $("form#roles_submit").submit(function (event) {
+                // socket.emit('set_name', {name: $('#name_data').val()});
+                let form = document.getElementById("roles");
+                let roles = []
+                for (let role of form.children) {
+                    let name = role.children[0].value
+                    let amount = role.children[1].value
+                    roles.push({
+                        name: name,
+                        amount: amount
+                    })
+                }
+
+                socket.emit("assign_roles", {roles: roles, default: $('#default_role').val()})
+
+                return false;
+            });
+        });
+    </script>
+</head>
+<body>
+    <h1>Waerwoelfe Spielleiter</h1>
+    <h3>Rollen:</h3>
+    <form id="roles" method="POST" action='#'>
+
+    </form>
+    <form id="role_add" method="POST" action='#'>
+
+        <input type="submit" value="Rolle hinzufügen">
+         <br>
+        <label>
+            Rolle, zum Auffüllen, wenn alle Plätze vergeben wurde:
+            <input id="default_role" type="text" placeholder="Standardrolle" value="Dorfbewohner">
+        </label>
+    </form>
+    <form id="roles_submit" method="POST" action='#'>
+        <input type="submit" value="Rollen Zuweisen">
+    </form>
+    <h3>Benutzer:</h3>
+    <table style="border: 1px solid black; border-collapse: collapse;">
+        <thead style="border: 1px solid black; border-collapse: collapse;">
+            <tr style="border: 1px solid black; border-collapse: collapse;">
+                <th style="border: 1px solid black; border-collapse: collapse;">Name</th>
+                <th style="border: 1px solid black; border-collapse: collapse;">Rolle</th>
+            </tr>
+        </thead>
+        <tbody id="users" style="border: 1px solid black; border-collapse: collapse;">
+
+        </tbody>
+    </table>
+</body>
+</html>
